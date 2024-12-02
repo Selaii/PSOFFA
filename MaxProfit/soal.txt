@@ -1,0 +1,38 @@
+Latar Belakang
+Perusahaan AAA ingin mengirimkan barang dalam sebuah kontainer
+berbentuk kubus dengan ukuran maksimum 3 m x 2 m x 2 m (12 m). Untuk
+efisiensi biaya, perusahaan ingin memaksimalkan penggunaan ruang
+kontainer dengan memasukkan berbagai jenis produk yang tersedia,
+tetapi harus memenuhi syarat tertentu.
+
+Data Produk
+Perusahaan memiliki tiga jenis produk dengan
+ukuran dan volume sebagai berikut:
+
+Produk A
+Ukuran: 0,5 m per unit
+Jumlah maksimum: 20 unit
+Harga jual: Rp200.000 per unit
+
+Produk B
+Ukuran: 0,25 m per unit
+Jumlah maksimum: 30 unit
+Harga jual: Rp150.000 per unit
+
+Produk C
+Ukuran: 0,1 m per unit
+Jumlah maksimum: 50 unit
+Harga jual: Rp100.000 per unit
+
+Tentukan kombinasi unit dari masing-masing
+produk yang harus dimasukkan ke dalam kontainer
+agar ruang maksimum terpakai tanpa melebihi batas pengiriman.
+
+Ruang kontainer tidak boleh terlampaui:
+0,5𝑎 + 0,25𝑏 + 0,1𝑐 ≤ 12 (kapasitas maksimum kontainer dalam meter kubik).
+
+Jumlah unit minimum produk yang dimasukkan harus terpenuhi:
+𝑎 + 𝑏 + 𝑐 ≥ 30 (untuk memenuhi target permintaan pelanggan).
+
+Jumlah unit total tidak boleh melebihi batas tertentu:
+𝑎 + 𝑏 + 𝑐 ≤ 50

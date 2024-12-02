@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFA for TSP Optimization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1 class="text-center text-2xl font-bold mt-5">FFA for TSP Optimization</h1>
+
+    <!-- Table for displaying fireflies -->
+    <table class="min-w-full border-collapse border border-blue-300 mt-5">
+        <thead>
+            <tr>
+                <th class="border border-gray-300 p-2">Firefly</th>
+                <th class="border border-gray-300 p-2">Urutan Kota</th>
+                <th class="border border-gray-300 p-2">Fitness (Jarak Total)</th>
+            </tr>
+        </thead>
+        <tbody id="fireflyTableBody"></tbody>
+    </table>
+
+    <!-- Display for best fitness and position -->
+    <div class="mt-5 text-center">
+        <p id="bestFitness" class="text-lg font-semibold">Best Fitness: </p>
+        <p id="bestPosition" class="text-lg font-semibold">Best Position: </p>
+    </div>
+
+    <!-- Start iteration button -->
+    <div class="text-center mt-5">
+        <button id="startButton" class="bg-green-500 text-white px-4 py-2 rounded">Start Iteration</button>
+    </div>
+
+    <!-- Chart for fitness progress -->
+    <div class="mt-5">
+        <canvas id="fitnessChart"></canvas>
+    </div>
+
+    <div class="mt-5">
+        <h2 class="text-center text-xl font-bold">Best Route Sketcher</h2>
+        <canvas id="routeSketcher" class="border border-gray-700 mx-auto" width="700" height="500"></canvas>
+    </div>
+
+    <script type="module">
+        import { FFA } from "./ffa.js";
+
+        // Distance matrix for TSP
+        const distanceMatrix = [
+            [0, 96, 129, 160, 197, 297, 32, 67, 21, 88.5],
+            [96, 0, 85, 80, 145, 284, 64, 96, 116, 48],
+            [129, 85, 0, 63, 180, 270, 110, 70, 130, 115],
+            [160, 80, 63, 0, 150, 260, 140, 95, 160, 125],
+            [197, 145, 180, 150, 0, 90, 220, 210, 230, 190],
+            [297, 284, 270, 260, 90, 0, 320, 290, 310, 270],
+            [32, 64, 110, 140, 220, 320, 0, 40, 30, 50],
+            [67, 96, 70, 95, 210, 290, 40, 0, 55, 70],
+            [21, 116, 130, 160, 230, 310, 30, 55, 0, 75],
+            [88.5, 48, 115, 125, 190, 270, 50, 70, 75, 0]
+        ];
+
+        const cityNames = [
+            "Surabaya", "Malang", "Kediri", "Blitar", "Jember", 
+            "Banyuwangi", "Sidoarjo", "Mojokerto", "Gresik", "Pasuruan"
+        ];
+
+        const cityCoordinates = [
+            { x: 112.768845, y: -7.250445 }, // Surabaya
+            { x: 112.626503, y: -7.981894 }, // Malang
+            { x: 112.015015, y: -7.848917 }, // Kediri
+            { x: 112.168613, y: -8.094243 }, // Blitar
+            { x: 113.699913, y: -8.172920 }, // Jember
+            { x: 114.369141, y: -8.219233 }, // Banyuwangi
+            { x: 112.7173389, y: -7.4530278 }, // Sidoarjo
+            { x: 112.4336111, y: -7.4722222 }, // Mojokerto
+            { x: 112.6555, y: -7.15665 }, // Gresik
+            { x: 112.903297, y: -7.644872 }, // Pasuruan
+        ];
+
+        // Ubah ukuran kanvas di sini
+        const canvasWidth = 450; 
+        const canvasHeight = 450; 
+
+        const xMin = Math.min(...cityCoordinates.map(city => city.x));
+        const xMax = Math.max(...cityCoordinates.map(city => city.x));
+        const yMin = Math.min(...cityCoordinates.map(city => city.y));
+        const yMax = Math.max(...cityCoordinates.map(city => city.y));
+
+        function normalizeCoordinate(value, min, max, canvasSize) {
+            return ((value - min) / (max - min)) * canvasSize;
+        }
+
+        function convertPositionToCityNames(position) {
+            return position.map(index => cityNames[index]);
+        }
+
+        const routeCanvas = document.getElementById('routeSketcher');
+        const ctx = routeCanvas.getContext('2d');
+
+        function drawRoute(position) {
+            ctx.clearRect(0, 0, routeCanvas.width, routeCanvas.height);
+
+            // Normalize coordinates
+            const normalizedCoordinates = cityCoordinates.map(city => ({
+                x: normalizeCoordinate(city.x, xMin, xMax, canvasWidth),
+                y: normalizeCoordinate(city.y, yMin, yMax, canvasHeight),
+            }));
+
+            // Draw cities
+            normalizedCoordinates.forEach((city, index) => {
+                ctx.beginPath();
+                ctx.arc(city.x, city.y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+                ctx.closePath();
+
+                // City label
+                ctx.fillStyle = "black";
+                ctx.font = "12px Arial";
+                ctx.fillText(cityNames[index], city.x + 10, city.y + 5);
+            });
+
+            // Draw the route
+            if (position.length > 0) {
+                ctx.beginPath();
+                const routeWithReturn = [...position, position[0]];
+                const startCity = normalizedCoordinates[routeWithReturn[0]];
+                ctx.moveTo(startCity.x, startCity.y);
+
+                for (let i = 1; i < routeWithReturn.length; i++) {
+                    const city = normalizedCoordinates[routeWithReturn[i]];
+                    ctx.lineTo(city.x, city.y);
+                }
+
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.closePath();
+            }
+        }
+
+        // Parameters for FFA
+        const nFireflies = 10;
+        const ffa = new FFA(nFireflies, 10, distanceMatrix, 0.2, 1.0, 0.1);
+
+        // DOM Elements
+        const tableBody = document.getElementById('fireflyTableBody');
+        const bestFitnessElement = document.getElementById('bestFitness');
+        const bestPositionElement = document.getElementById('bestPosition');
+        const startButton = document.getElementById('startButton');
+        const fitnessChartCtx = document.getElementById('fitnessChart').getContext('2d');
+
+        // Variables to manage state
+        let iteration = 0;
+        let bestFitnessData = [];
+        let labels = [];
+        let isRunning = false;
+        let globalBestFitness = Infinity;
+        let globalBestPosition = [];
+
+        // Chart configuration
+        const fitnessChart = new Chart(fitnessChartCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Best Fitness (Jarak Total)',
+                    data: bestFitnessData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Iteration'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Jarak Total'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update table function
+        function updateTable() {
+            tableBody.innerHTML = '';
+            ffa.fireflies.forEach((firefly, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="border border-gray-300 p-2 text-center">${index + 1}</td>
+                    <td class="border border-gray-300 p-2 text-center">${convertPositionToCityNames(firefly.position).join(' -> ')}</td>
+                    <td class="border border-gray-300 p-2 text-center">${firefly.fitness.toFixed(2)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            if (ffa.bestFirefly.fitness < globalBestFitness) {
+                globalBestFitness = ffa.bestFirefly.fitness;
+                globalBestPosition = ffa.bestFirefly.position.slice();
+            }
+
+            bestFitnessElement.textContent = `Best Fitness: ${globalBestFitness.toFixed(2)}`;
+            bestPositionElement.textContent = `Best Position: ${convertPositionToCityNames(globalBestPosition).join(' -> ')}`;
+        
+            drawRoute(globalBestPosition);
+        }
+
+        // FFA Iteration
+        function runFFAIterations() {
+            if (isRunning) return;
+            isRunning = true;
+
+            const maxIterations = 50;
+            const interval = setInterval(() => {
+                if (iteration >= maxIterations) {
+                    clearInterval(interval);
+                    isRunning = false;
+                    return;
+                }
+                iteration++;
+                ffa.moveFireflies();
+                updateTable();
+
+                labels.push(iteration);
+                bestFitnessData.push(globalBestFitness);
+
+                fitnessChart.update();
+            }, 500);
+        }
+
+        // Button event listener
+        startButton.addEventListener('click', () => {
+            iteration = 0;
+            runFFAIterations();
+        });
+
+        // Initial update
+        updateTable();
+    </script>
+</body>
+</html>

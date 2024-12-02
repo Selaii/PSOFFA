@@ -1,0 +1,5 @@
+Seorang kurir ekspedisi di Surabaya harus mengunjungi semua 10
+kota di atas dan kembali ke Surabaya dengan total jarak perjalanan
+yang paling minimal. Tentukan urutan kota yang harus dilalui oleh kurir
+untuk menyelesaikan rute tersebut dengan jarak terkecil.
+
